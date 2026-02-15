@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useInView, useMotionValue, animate } from 'framer-motion'
 import {
   Phone,
@@ -30,8 +30,10 @@ import {
   HelpCircle,
   ArrowUp,
   Cookie,
-  Expand
+  Expand,
+  FileDown
 } from 'lucide-react'
+import html2pdf from 'html2pdf.js'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -172,7 +174,8 @@ const translations = {
       company: 'Antest Analitik ve Endüstriyel Test Cihazları Paz. San. Ve Tic. Ltd. Şti.'
     },
     whatsapp: 'Canlı Destek',
-    liveStatus: 'Çevrimiçi'
+    liveStatus: 'Çevrimiçi',
+    downloadPdf: 'PDF Olarak İndir'
   },
   en: {
     nav: {
@@ -304,7 +307,8 @@ const translations = {
       company: 'Antest Analytical and Industrial Test Equipment Marketing Industry and Trade Ltd. Co.'
     },
     whatsapp: 'Live Support',
-    liveStatus: 'Online'
+    liveStatus: 'Online',
+    downloadPdf: 'Download as PDF'
   }
 }
 
@@ -398,7 +402,26 @@ function App() {
   const [showCookieBanner, setShowCookieBanner] = useState(() => !localStorage.getItem('antest-cookie-consent'))
   const [isLoading, setIsLoading] = useState(true)
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null)
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
   const t = translations[language]
+
+  const handleDownloadPdf = useCallback(async () => {
+    setIsGeneratingPdf(true)
+    try {
+      const element = document.getElementById('main-content')
+      if (!element) return
+      const opt = {
+        margin: 0,
+        filename: 'Antest-Katalog.pdf',
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+      }
+      await html2pdf().set(opt).from(element).save()
+    } finally {
+      setIsGeneratingPdf(false)
+    }
+  }, [])
 
   // Loading screen
   useEffect(() => {
@@ -635,7 +658,7 @@ function App() {
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark bg-slate-950' : 'bg-white'}`}>
+    <div id="main-content" className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark bg-slate-950' : 'bg-white'}`}>
       {/* Top Bar */}
       <div className="bg-slate-900 text-white py-2 px-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center text-sm">
@@ -763,7 +786,12 @@ function App() {
                 </AnimatePresence>
               </motion.button>
 
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6">
+              <Button onClick={handleDownloadPdf} disabled={isGeneratingPdf} className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6">
+                {isGeneratingPdf ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                ) : (
+                  <FileDown className="w-4 h-4 mr-2" />
+                )}
                 {t.nav.catalog}
               </Button>
             </div>
@@ -1594,6 +1622,29 @@ function App() {
           </motion.button>
         )}
       </AnimatePresence>
+
+      {/* PDF Download Floating Button */}
+      <motion.button
+        onClick={handleDownloadPdf}
+        disabled={isGeneratingPdf}
+        className="fixed bottom-20 right-6 z-50 bg-red-500 hover:bg-red-600 disabled:bg-red-400 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all group"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        title={t.downloadPdf}
+      >
+        <div className="relative">
+          {isGeneratingPdf ? (
+            <div className="w-7 h-7 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <FileDown className="w-7 h-7" />
+          )}
+        </div>
+        <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-slate-900 text-white text-sm px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          {t.downloadPdf}
+        </span>
+      </motion.button>
 
       {/* KVKK / Cookie Banner */}
       <AnimatePresence>
