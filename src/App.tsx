@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, useInView, useMotionValue, animate } from 'framer-motion'
-import { 
-  Phone, 
-  Mail, 
-  MapPin, 
-  ChevronRight, 
-  FlaskConical, 
-  Scale, 
-  Thermometer, 
+import {
+  Phone,
+  Mail,
+  MapPin,
+  ChevronRight,
+  FlaskConical,
+  Scale,
+  Thermometer,
   Wind,
   Beaker,
   Microscope,
@@ -27,7 +27,10 @@ import {
   Star,
   Calendar,
   User,
-  HelpCircle
+  HelpCircle,
+  ArrowUp,
+  Cookie,
+  Expand
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -391,11 +394,22 @@ function App() {
   const [language, setLanguage] = useState<'tr' | 'en'>('tr')
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  const [showCookieBanner, setShowCookieBanner] = useState(() => !localStorage.getItem('antest-cookie-consent'))
+  const [isLoading, setIsLoading] = useState(true)
+  const [selectedProduct, setSelectedProduct] = useState<number | null>(null)
   const t = translations[language]
+
+  // Loading screen
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 2000)
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50)
+      setShowScrollTop(window.scrollY > 400)
     }
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
@@ -412,11 +426,14 @@ function App() {
   const products = [
     {
       title: t.products.categories.ovens,
-      description: language === 'tr' 
+      description: language === 'tr'
         ? 'Laboratuvar tipi kurutma etüvleri, vakumlu etüvler ve endüstriyel fırınlar'
         : 'Laboratory drying ovens, vacuum ovens and industrial furnaces',
       image: '/images/product-etuv.jpg',
-      icon: <Thermometer className="w-6 h-6" />
+      icon: <Thermometer className="w-6 h-6" />,
+      details: language === 'tr'
+        ? { specs: ['Sıcaklık: 50°C - 300°C', 'Kapasite: 30L - 720L', 'Hassasiyet: ±0.5°C', 'Dijital PID kontrol'], brands: ['JSR', 'Protherm', 'Nüve'] }
+        : { specs: ['Temperature: 50°C - 300°C', 'Capacity: 30L - 720L', 'Accuracy: ±0.5°C', 'Digital PID control'], brands: ['JSR', 'Protherm', 'Nüve'] }
     },
     {
       title: t.products.categories.balances,
@@ -424,7 +441,10 @@ function App() {
         ? 'Yüksek hassasiyetli analitik teraziler ve hassas tartım cihazları'
         : 'High precision analytical balances and precision weighing devices',
       image: '/images/product-balance.jpg',
-      icon: <Scale className="w-6 h-6" />
+      icon: <Scale className="w-6 h-6" />,
+      details: language === 'tr'
+        ? { specs: ['Hassasiyet: 0.0001g', 'Kapasite: 120g - 32kg', 'Dahili kalibrasyon', 'USB/RS232 bağlantı'], brands: ['Mettler Toledo', 'Radwag'] }
+        : { specs: ['Readability: 0.0001g', 'Capacity: 120g - 32kg', 'Internal calibration', 'USB/RS232 connectivity'], brands: ['Mettler Toledo', 'Radwag'] }
     },
     {
       title: t.products.categories.centrifuges,
@@ -432,7 +452,10 @@ function App() {
         ? 'Laboratuvar ve endüstriyel kullanıma uygun santrifüj cihazları'
         : 'Centrifuge devices suitable for laboratory and industrial use',
       image: '/images/product-centrifuge.jpg',
-      icon: <Wind className="w-6 h-6" />
+      icon: <Wind className="w-6 h-6" />,
+      details: language === 'tr'
+        ? { specs: ['Hız: 500 - 15.000 rpm', 'Kapasite: 6x15ml - 4x750ml', 'Soğutmalı modeller', 'Otomatik dengeleme'], brands: ['Hettich', 'Thermo Scientific'] }
+        : { specs: ['Speed: 500 - 15,000 rpm', 'Capacity: 6x15ml - 4x750ml', 'Refrigerated models', 'Auto balancing'], brands: ['Hettich', 'Thermo Scientific'] }
     },
     {
       title: t.products.categories.incubators,
@@ -440,7 +463,10 @@ function App() {
         ? 'CO2 inkübatörler, bakteri inkübatörleri ve iklimlendirme dolapları'
         : 'CO2 incubators, bacteria incubators and climate chambers',
       image: '/images/product-incubator.jpg',
-      icon: <FlaskConical className="w-6 h-6" />
+      icon: <FlaskConical className="w-6 h-6" />,
+      details: language === 'tr'
+        ? { specs: ['Sıcaklık: 5°C - 60°C', 'CO2: 0-20%', 'Nem kontrolü', 'HEPA filtre'], brands: ['Thermo Scientific', 'Nüve'] }
+        : { specs: ['Temperature: 5°C - 60°C', 'CO2: 0-20%', 'Humidity control', 'HEPA filter'], brands: ['Thermo Scientific', 'Nüve'] }
     }
   ]
 
@@ -567,6 +593,46 @@ function App() {
       image: '/images/product-etuv.jpg'
     }
   ]
+
+  // Loading screen
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center">
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="flex flex-col items-center"
+        >
+          <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center mb-6">
+            <Microscope className="w-14 h-14 text-white" />
+          </div>
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-4xl font-bold text-white mb-2"
+          >
+            ANTEST
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-slate-400 text-sm mb-8"
+          >
+            {language === 'tr' ? 'Analitik & Test Cihazları' : 'Analytical & Test Equipment'}
+          </motion.p>
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: 200 }}
+            transition={{ delay: 0.6, duration: 1.2, ease: 'easeInOut' }}
+            className="h-1 bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full"
+          />
+        </motion.div>
+      </div>
+    )
+  }
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark bg-slate-950' : 'bg-white'}`}>
@@ -978,12 +1044,12 @@ function App() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {products.map((product, index) => (
               <ScrollReveal key={index} delay={index * 0.1}>
-                <Card className={`group overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-300 ${
+                <Card className={`group overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer ${
                   isDarkMode ? 'bg-slate-800' : 'bg-white'
-                }`}>
+                }`} onClick={() => setSelectedProduct(index)}>
                   <div className="relative h-48 overflow-hidden">
-                    <img 
-                      src={product.image} 
+                    <img
+                      src={product.image}
                       alt={product.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
@@ -993,17 +1059,19 @@ function App() {
                         {product.icon}
                       </div>
                     </div>
+                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="bg-white/90 backdrop-blur-sm p-2 rounded-lg">
+                        <Expand className="w-4 h-4 text-slate-700" />
+                      </div>
+                    </div>
                   </div>
                   <CardContent className="p-6">
                     <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{product.title}</h3>
                     <p className={`text-sm mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{product.description}</p>
-                    <a 
-                      href="#" 
-                      className="inline-flex items-center text-blue-600 font-medium hover:text-blue-700 transition-colors"
-                    >
+                    <span className="inline-flex items-center text-blue-600 font-medium hover:text-blue-700 transition-colors">
                       {t.products.details}
                       <ChevronRight className="w-4 h-4 ml-1" />
-                    </a>
+                    </span>
                   </CardContent>
                 </Card>
               </ScrollReveal>
@@ -1397,6 +1465,23 @@ function App() {
               </div>
             </ScrollReveal>
           </div>
+
+          {/* Google Maps */}
+          <ScrollReveal delay={0.3}>
+            <div className="mt-12 rounded-2xl overflow-hidden shadow-lg">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3124.5!2d27.2167!3d38.4667!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14bbd8a1a7a0d0d1%3A0x0!2sBornova%2C%20%C4%B0zmir!5e0!3m2!1str!2str!4v1700000000000!5m2!1str!2str"
+                width="100%"
+                height="350"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Antest Location"
+                className="w-full"
+              />
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -1467,7 +1552,7 @@ function App() {
 
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-slate-400 text-sm">
-              © 2024 ANTEST. {t.footer.rights}
+              © 2025 ANTEST. {t.footer.rights}
             </p>
             <p className="text-slate-500 text-sm">
               {t.footer.company}
@@ -1491,10 +1576,141 @@ function App() {
           <MessageCircle className="w-7 h-7" />
           <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
         </div>
-        <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-slate-800 text-white text-sm px-3 py-1 rounded-lg whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity">
-          {t.whatsapp}
-        </span>
       </motion.a>
+
+      {/* Scroll to Top Button */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="fixed bottom-6 left-6 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <ArrowUp className="w-6 h-6" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* KVKK / Cookie Banner */}
+      <AnimatePresence>
+        {showCookieBanner && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className={`fixed bottom-0 left-0 right-0 z-[60] p-4 md:p-6 border-t ${
+              isDarkMode ? 'bg-slate-900/95 border-slate-700' : 'bg-white/95 border-slate-200'
+            } backdrop-blur-md`}
+          >
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-4">
+              <Cookie className={`w-8 h-8 flex-shrink-0 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+              <p className={`text-sm flex-1 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                {language === 'tr'
+                  ? 'Bu web sitesi, deneyiminizi iyileştirmek için çerezler kullanmaktadır. Sitemizi kullanarak KVKK kapsamındaki çerez politikamızı kabul etmiş olursunuz.'
+                  : 'This website uses cookies to improve your experience. By using our site, you accept our cookie policy under KVKK regulations.'}
+              </p>
+              <div className="flex gap-3 flex-shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={`rounded-full ${isDarkMode ? 'border-slate-600 text-slate-300 hover:bg-slate-800' : ''}`}
+                  onClick={() => {
+                    localStorage.setItem('antest-cookie-consent', 'rejected')
+                    setShowCookieBanner(false)
+                  }}
+                >
+                  {language === 'tr' ? 'Reddet' : 'Decline'}
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-full"
+                  onClick={() => {
+                    localStorage.setItem('antest-cookie-consent', 'accepted')
+                    setShowCookieBanner(false)
+                  }}
+                >
+                  {language === 'tr' ? 'Kabul Et' : 'Accept'}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Product Detail Modal */}
+      <Dialog open={selectedProduct !== null} onOpenChange={() => setSelectedProduct(null)}>
+        <DialogContent className={`sm:max-w-2xl ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white'}`}>
+          {selectedProduct !== null && products[selectedProduct] && (
+            <>
+              <DialogHeader>
+                <DialogTitle className={`text-2xl ${isDarkMode ? 'text-white' : ''}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                      {products[selectedProduct].icon}
+                    </div>
+                    {products[selectedProduct].title}
+                  </div>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-6 mt-4">
+                <div className="rounded-xl overflow-hidden">
+                  <img
+                    src={products[selectedProduct].image}
+                    alt={products[selectedProduct].title}
+                    className="w-full h-56 object-cover"
+                  />
+                </div>
+                <p className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>
+                  {products[selectedProduct].description}
+                </p>
+                <div>
+                  <h4 className={`font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {language === 'tr' ? 'Teknik Özellikler' : 'Specifications'}
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {products[selectedProduct].details.specs.map((spec, i) => (
+                      <div key={i} className={`flex items-center gap-2 text-sm p-2 rounded-lg ${isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-50 text-slate-700'}`}>
+                        <CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        {spec}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className={`font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {language === 'tr' ? 'Markalar' : 'Brands'}
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {products[selectedProduct].details.brands.map((brand, i) => (
+                      <Badge key={i} className="bg-blue-100 text-blue-700 hover:bg-blue-200">{brand}</Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
+                    <Phone className="w-4 h-4 mr-2" />
+                    {language === 'tr' ? 'Teklif Al' : 'Get Quote'}
+                  </Button>
+                  <Button variant="outline" className="flex-1 rounded-xl border-blue-600 text-blue-600 hover:bg-blue-50"
+                    onClick={() => {
+                      setSelectedProduct(null)
+                      document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
+                    }}
+                  >
+                    <Mail className="w-4 h-4 mr-2" />
+                    {language === 'tr' ? 'İletişime Geç' : 'Contact Us'}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
