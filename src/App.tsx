@@ -41,7 +41,7 @@ import {
   ShieldCheck,
   ArrowLeft
 } from 'lucide-react'
-import html2pdf from 'html2pdf.js'
+// html2pdf loaded dynamically when needed
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -484,6 +484,7 @@ function App() {
         html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
       }
+      const html2pdf = (await import('html2pdf.js')).default
       await html2pdf().set(opt).from(element).save()
     } finally {
       setIsGeneratingPdf(false)
